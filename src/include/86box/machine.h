@@ -204,6 +204,7 @@ enum {
     MACHINE_TYPE_SLOT2,
     MACHINE_TYPE_SOCKET370,
     MACHINE_TYPE_MISC,
+    MACHINE_TYPE_386EX,
     MACHINE_TYPE_MAX
 };
 
@@ -619,6 +620,13 @@ extern int             machine_at_kmxc02_init(const machine_t *);
 
 /* WD76C10 */
 extern int             machine_at_wd76c10_init(const machine_t *);
+
+/* m_at_386ex.c */
+/* Intel 386EX-based embedded systems */
+#ifdef EMU_DEVICE_H
+extern const device_t  ts3100_jumpers_device;
+#endif
+extern int             machine_at_ts3100_init(const machine_t *);
 
 /* m_at_m6117.c */
 /* ALi M6117D */

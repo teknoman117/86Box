@@ -55,6 +55,7 @@ typedef struct sst_t {
 
     mem_mapping_t mapping[8];
     mem_mapping_t mapping_h[8];
+    mem_mapping_t mapping_l;
 
     pc_timer_t page_write_timer;
 } sst_t;
@@ -134,6 +135,8 @@ static char flash_path[1024];
 #define AMD         0x01 /* AMD Manufacturer's ID */
 #define AMD29F010A  0x2000
 #define AMD29F020A  0xb000
+#define AMD29F040A  0xa400
+#define AMD29F080A  0xd500
 
 #define SIZE_512K   0x010000
 #define SIZE_1M     0x020000
@@ -184,6 +187,11 @@ sst_sector_erase(sst_t *dev, uint32_t addr)
             memset(&dev->array[0x18000], 0xff, 16384);
         else if ((base >= 0x1C000) && (base <= 0x1ffff))
             memset(&dev->array[0x1c000], 0xff, 16384);
+    } else if ((dev->manufacturer == AMD) && ((dev->id == 0xa4) || (dev->id == 0xd5))) {
+        // AMD 29F040 and 29F080 use 64 KiB sectors
+        base = (addr & biosmask) & ~0xffff;
+
+        memset(&dev->array[base], 0xff, 65536);
     } else {
         if ((base < 0x2000) && (dev->bbp_first_8k & 0x01))
             return;
@@ -443,6 +451,8 @@ sst_read(uint32_t addr, void *priv)
     else {
         if ((addr >= biosaddr) && (addr <= (biosaddr + biosmask)))
             ret = dev->array[addr - biosaddr];
+        else
+            ret = dev->array[addr];
     }
 
     return ret;
@@ -461,6 +471,8 @@ sst_readw(uint32_t addr, void *priv)
     else {
         if ((addr >= biosaddr) && (addr <= (biosaddr + biosmask)))
             ret = *(uint16_t *) &dev->array[addr - biosaddr];
+        else
+            ret = *(uint16_t *) &dev->array[addr];
     }
 
     return ret;
@@ -479,6 +491,8 @@ sst_readl(uint32_t addr, void *priv)
     else {
         if ((addr >= biosaddr) && (addr <= (biosaddr + biosmask)))
             ret = *(uint32_t *) &dev->array[addr - biosaddr];
+        else
+            ret = *(uint32_t *) &dev->array[addr];
     }
 
     return ret;
@@ -512,12 +526,24 @@ sst_add_mappings(sst_t *dev)
                             sst_read, sst_readw, sst_readl,
                             sst_write, NULL, NULL,
                             dev->array + fbase, MEM_MAPPING_EXTERNAL | MEM_MAPPING_ROM | MEM_MAPPING_ROMCS | MEM_MAPPING_ROM_WS, (void *) dev);
+        } else if (is386ex) {
+            mem_mapping_add(&(dev->mapping_h[i]), (base | 0x3400000), 0x10000,
+                            sst_read, sst_readw, sst_readl,
+                            sst_write, NULL, NULL,
+                            dev->array + fbase, MEM_MAPPING_EXTERNAL | MEM_MAPPING_ROM | MEM_MAPPING_ROMCS | MEM_MAPPING_ROM_WS, (void *) dev);
         } else {
             mem_mapping_add(&(dev->mapping_h[i]), (base | (cpu_16bitbus ? 0xf00000 : 0xfff00000)), 0x10000,
                             sst_read, sst_readw, sst_readl,
                             sst_write, NULL, NULL,
                             dev->array + fbase, MEM_MAPPING_EXTERNAL | MEM_MAPPING_ROM | MEM_MAPPING_ROMCS | MEM_MAPPING_ROM_WS, (void *) dev);
         }
+    }
+
+    if (is386ex) {
+        mem_mapping_add(&(dev->mapping_l), 0x3400000, dev->size,
+                        sst_read, sst_readw, sst_readl,
+                        sst_write, NULL, NULL,
+                        dev->array, MEM_MAPPING_EXTERNAL | MEM_MAPPING_ROM | MEM_MAPPING_ROMCS | MEM_MAPPING_ROM_WS, (void *) dev);
     }
 }
 
@@ -1035,6 +1061,34 @@ const device_t amd_flash_29f020a_device = {
     .internal_name = "amd_flash_29f020a",
     .flags         = 0,
     .local         = AMD | AMD29F020A | SIZE_2M,
+    .init          = sst_init,
+    .close         = sst_close,
+    .reset         = NULL,
+    .available     = NULL,
+    .speed_changed = NULL,
+    .force_redraw  = NULL,
+    .config        = NULL
+};
+
+const device_t amd_flash_29f040a_device = {
+    .name          = "AMD 29F040a Flash BIOS",
+    .internal_name = "amd_flash_29f040a",
+    .flags         = 0,
+    .local         = AMD | AMD29F040A | SIZE_4M,
+    .init          = sst_init,
+    .close         = sst_close,
+    .reset         = NULL,
+    .available     = NULL,
+    .speed_changed = NULL,
+    .force_redraw  = NULL,
+    .config        = NULL
+};
+
+const device_t amd_flash_29f080a_device = {
+    .name          = "AMD 29F080a Flash BIOS",
+    .internal_name = "amd_flash_29f080a",
+    .flags         = 0,
+    .local         = AMD | AMD29F080A | SIZE_8M,
     .init          = sst_init,
     .close         = sst_close,
     .reset         = NULL,
