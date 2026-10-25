@@ -624,9 +624,10 @@ extern int             machine_at_wd76c10_init(const machine_t *);
 /* m_at_386ex.c */
 /* Intel 386EX-based embedded systems */
 #ifdef EMU_DEVICE_H
-extern const device_t  ts3100_jumpers_device;
+extern const device_t  ts3x00_jumpers_device;
 #endif
 extern int             machine_at_ts3100_init(const machine_t *);
+extern int             machine_at_ts3200_init(const machine_t *);
 
 /* m_at_m6117.c */
 /* ALi M6117D */

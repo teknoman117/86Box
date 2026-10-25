@@ -29,7 +29,6 @@
 #include <86box/timer.h>
 #include <86box/io.h>
 #include <86box/device.h>
-#include <86box/keyboard.h>
 #include <86box/flash.h>
 #include <86box/mem.h>
 #include <86box/rom.h>
@@ -43,7 +42,26 @@
 #include <86box/plat_unused.h>
 
 /*
- * TS-3100 board glue: jumper block + board ID register.
+ * Board ID:
+ *   I/O 0x0074 returns 0x01 (TS-3100 identifier) or 0x02 (TS-3200 identifier)
+ */
+#define TS3100_BOARD_ID 0x01
+#define TS3200_BOARD_ID 0x02
+
+static uint8_t
+ts3100_board_id_read(UNUSED(uint16_t port), UNUSED(void *priv))
+{
+    return TS3100_BOARD_ID;
+}
+
+static uint8_t
+ts3200_board_id_read(UNUSED(uint16_t port), UNUSED(void *priv))
+{
+    return TS3200_BOARD_ID;
+}
+
+/*
+ * TS-3x00 board glue: jumper block + board ID register.
  *
  * Each "checked" config value represents a physically installed jumper. Real
  * hardware uses pull-ups with the jumper grounding the pin, so an installed
@@ -55,23 +73,20 @@
  *   JP3 - Enable Flash Write        -             - I/O 0x0077 bit 1
  *   JP4 - Reduced Clock Rate        -             - I/O 0x0077 bit 2
  *   JP5 - User Jumper               - 386EX P3.2  - I/O 0xF870 bit 2
- *
- * Board ID:
- *   I/O 0x0074 returns 0x01 (TS-3100 identifier).
  */
-#define TS3100_BOARD_ID 0x01
-typedef struct ts3100_jumpers_t {
+
+typedef struct ts3x00_jumpers_t {
     uint8_t jp1;
     uint8_t jp2;
     uint8_t jp3;
     uint8_t jp4;
     uint8_t jp5;
-} ts3100_jumpers_t;
+} ts3x00_jumpers_t;
 
 static uint8_t
-ts3100_jumpers_p1_read(UNUSED(uint16_t port), void *priv)
+ts3x00_jumpers_p1_read(UNUSED(uint16_t port), void *priv)
 {
-    const ts3100_jumpers_t *j = (ts3100_jumpers_t *) priv;
+    const ts3x00_jumpers_t *j = (ts3x00_jumpers_t *) priv;
     uint8_t val = 0x90;
 
     if (j->jp1)
@@ -83,9 +98,9 @@ ts3100_jumpers_p1_read(UNUSED(uint16_t port), void *priv)
 }
 
 static uint8_t
-ts3100_jumpers_p3_read(UNUSED(uint16_t port), void *priv)
+ts3x00_jumpers_p3_read(UNUSED(uint16_t port), void *priv)
 {
-    const ts3100_jumpers_t *j = (ts3100_jumpers_t *) priv;
+    const ts3x00_jumpers_t *j = (ts3x00_jumpers_t *) priv;
     uint8_t val = 0x04;
 
     if (j->jp5)
@@ -95,9 +110,9 @@ ts3100_jumpers_p3_read(UNUSED(uint16_t port), void *priv)
 }
 
 static uint8_t
-ts3100_jumpers_isa_read(UNUSED(uint16_t port), void *priv)
+ts3x00_jumpers_isa_read(UNUSED(uint16_t port), void *priv)
 {
-    const ts3100_jumpers_t *j = (ts3100_jumpers_t *) priv;
+    const ts3x00_jumpers_t *j = (ts3x00_jumpers_t *) priv;
     uint8_t val = 0x00;
 
     if (j->jp3)
@@ -108,16 +123,10 @@ ts3100_jumpers_isa_read(UNUSED(uint16_t port), void *priv)
     return val;
 }
 
-static uint8_t
-ts3100_board_id_read(UNUSED(uint16_t port), UNUSED(void *priv))
-{
-    return TS3100_BOARD_ID;
-}
-
 static void *
-ts3100_jumpers_init(UNUSED(const device_t *info))
+ts3x00_jumpers_init(UNUSED(const device_t *info))
 {
-    ts3100_jumpers_t *j = (ts3100_jumpers_t *) calloc(1, sizeof(ts3100_jumpers_t));
+    ts3x00_jumpers_t *j = (ts3x00_jumpers_t *) calloc(1, sizeof(ts3x00_jumpers_t));
 
     j->jp1 = device_get_config_int("jp1");
     j->jp2 = device_get_config_int("jp2");
@@ -125,29 +134,26 @@ ts3100_jumpers_init(UNUSED(const device_t *info))
     j->jp4 = device_get_config_int("jp4");
     j->jp5 = device_get_config_int("jp5");
 
-    io_sethandler(0x0074, 1,
-                  ts3100_board_id_read, NULL, NULL,
-                  NULL, NULL, NULL, NULL);
     io_sethandler(0x0077, 1,
-                  ts3100_jumpers_isa_read, NULL, NULL,
+                  ts3x00_jumpers_isa_read, NULL, NULL,
                   NULL, NULL, NULL, j);
     io_sethandler(0xf860, 1,
-                  ts3100_jumpers_p1_read, NULL, NULL,
+                  ts3x00_jumpers_p1_read, NULL, NULL,
                   NULL, NULL, NULL, j);
     io_sethandler(0xf870, 1,
-                  ts3100_jumpers_p3_read, NULL, NULL,
+                  ts3x00_jumpers_p3_read, NULL, NULL,
                   NULL, NULL, NULL, j);
 
     return j;
 }
 
 static void
-ts3100_jumpers_close(void *priv)
+ts3x00_jumpers_close(void *priv)
 {
     free(priv);
 }
 
-static const device_config_t ts3100_jumpers_config[] = {
+static const device_config_t ts3x00_jumpers_config[] = {
     // clang-format off
     {
         .name        = "jp1",
@@ -183,18 +189,18 @@ static const device_config_t ts3100_jumpers_config[] = {
     // clang-format on
 };
 
-const device_t ts3100_jumpers_device = {
-    .name          = "TS-3100 Jumper Block",
-    .internal_name = "ts3100_jumpers",
+const device_t ts3x00_jumpers_device = {
+    .name          = "TS-3x00 Jumper Block",
+    .internal_name = "ts3x00_jumpers",
     .flags         = 0,
     .local         = 0,
-    .init          = ts3100_jumpers_init,
-    .close         = ts3100_jumpers_close,
+    .init          = ts3x00_jumpers_init,
+    .close         = ts3x00_jumpers_close,
     .reset         = NULL,
     .available     = NULL,
     .speed_changed = NULL,
     .force_redraw  = NULL,
-    .config        = ts3100_jumpers_config
+    .config        = ts3x00_jumpers_config
 };
 
 int
@@ -209,22 +215,58 @@ machine_at_ts3100_init(const machine_t *model)
         return ret;
 
     machine_at_common_init(model);
-    void *kbc_priv = device_add_params(machine_get_kbc_device(machine), (void *) model->kbc_params);
-    /* The TS-3100 BIOS doesn't issue the AMI 0xCB command that normally
-       sets FLAG_PS2 on the KBC, and it leaves command-byte bit 5 set,
-       which in the AT KBC means "XT mode" - and XT mode bypasses the
-       set-2->set-1 scancode translation regardless of KBC_FLAG_IS_TYPE2.
-       Force PS/2 mode here so translation always runs. */
-    kbc_at_set_ps2(kbc_priv, 1);
+
+    /* Make sure the aliased range allows internal mappings. */
+    /*mem_set_mem_state_both(0x00000000, 0x04000000,
+                           MEM_READ_INTERNAL | MEM_WRITE_INTERNAL);
+    mem_mapping_set_mask(&ram_low_mapping, 0x001FFFFF);
+    mem_mapping_set_base_ignore(&ram_low_mapping, 0xffe00000);*/
+
+    io_sethandler(0x0074, 1,
+                  ts3100_board_id_read, NULL, NULL,
+                  NULL, NULL, NULL, NULL);
 
     device_add(&port_92_device);
 
     device_add_inst(&ns16450_device, 1);
     device_add_inst(&ns16450_device, 2);
 
-    device_add(&ts3100_jumpers_device);
+    device_add(&ts3x00_jumpers_device);
 
     device_add(&amd_flash_29f040a_device);
+
+    device_add_params(machine_get_kbc_device(machine), (void *) model->kbc_params);
+
+    return ret;
+}
+
+int
+machine_at_ts3200_init(const machine_t *model)
+{
+    int ret;
+
+    ret = bios_load_linear("roms/machines/ts3200/ts3200.bin",
+                           0x00000000, 1048576, 0);
+
+    if (bios_only || !ret)
+        return ret;
+
+    machine_at_common_init(model);
+
+    io_sethandler(0x0074, 1,
+                ts3200_board_id_read, NULL, NULL,
+                NULL, NULL, NULL, NULL);
+
+    device_add(&port_92_device);
+
+    device_add_inst(&ns16450_device, 1);
+    device_add_inst(&ns16450_device, 2);
+
+    device_add(&ts3x00_jumpers_device);
+
+    device_add(&amd_flash_29f080a_device);
+
+    device_add_params(machine_get_kbc_device(machine), (void *) model->kbc_params);
 
     return ret;
 }

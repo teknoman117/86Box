@@ -53,8 +53,8 @@ typedef struct sst_t {
     uint8_t  page_dirty[128];
     uint8_t *array;
 
-    mem_mapping_t mapping[8];
-    mem_mapping_t mapping_h[8];
+    mem_mapping_t mapping[16];
+    mem_mapping_t mapping_h[16];
     mem_mapping_t mapping_l;
 
     pc_timer_t page_write_timer;
@@ -539,7 +539,7 @@ sst_add_mappings(sst_t *dev)
         }
     }
 
-    if (is386ex) {
+    if (is386ex && dev->size < 1048576) {
         mem_mapping_add(&(dev->mapping_l), 0x3400000, dev->size,
                         sst_read, sst_readw, sst_readl,
                         sst_write, NULL, NULL,
