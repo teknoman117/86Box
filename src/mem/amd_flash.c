@@ -388,6 +388,8 @@ am29f016d_writew(uint32_t addr, uint16_t val, void *priv)
         return;
 
     if ((dev->cycle == 0) && (dev->state == AMD_STATE_PROGRAM)) {
+        if (*(uint16_t *) &(dev->array[calc]) != val)
+            dev->dirty = 1;
         *(uint16_t *) &(dev->array[calc]) = val;
         dev->state = AMD_STATE_READ_ARRAY;
     } else {
@@ -406,6 +408,8 @@ am29f016d_writel(uint32_t addr, uint32_t val, void *priv)
         return;
 
     if ((dev->cycle == 0) && (dev->state == AMD_STATE_PROGRAM)) {
+        if (*(uint32_t *) &(dev->array[calc]) != val)
+            dev->dirty = 1;
         *(uint32_t *) &(dev->array[calc]) = val;
         dev->state = AMD_STATE_READ_ARRAY;
     } else {
