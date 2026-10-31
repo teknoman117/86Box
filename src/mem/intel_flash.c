@@ -460,21 +460,21 @@ intel_flash_create(const device_t *model, const flash_cfg_t *cfg)
             dev->block_len[BLOCK_DATA2] = 0x02000;
             dev->block_len[BLOCK_BOOT]  = 0x04000;
 
-            if (dev->flags & FLAG_BXB) {                 /* 28F004BX-T/28F400BX-B */
-                dev->block_start[BLOCK_BOOT]  = 0x00000; /* MAIN BLOCK 1 */
-                dev->block_end[BLOCK_BOOT]    = 0x1ffff;
-                dev->block_start[BLOCK_DATA2] = 0x20000; /* MAIN BLOCK 2 */
-                dev->block_end[BLOCK_DATA2]   = 0x3ffff;
-                dev->block_start[BLOCK_DATA1] = 0x40000; /* MAIN BLOCK 3 */
-                dev->block_end[BLOCK_DATA1]   = 0x5ffff;
-                dev->block_start[BLOCK_MAIN4] = 0x60000; /* MAIN BLOCK 4 */
-                dev->block_end[BLOCK_MAIN4]   = 0x77fff;
-                dev->block_start[BLOCK_MAIN3] = 0x78000; /* DATA AREA 1 BLOCK */
-                dev->block_end[BLOCK_MAIN3]   = 0x79fff;
-                dev->block_start[BLOCK_MAIN2] = 0x7a000; /* DATA AREA 2 BLOCK */
-                dev->block_end[BLOCK_MAIN2]   = 0x7bfff;
-                dev->block_start[BLOCK_MAIN1] = 0x7c000; /* BOOT BLOCK */
-                dev->block_end[BLOCK_MAIN1]   = 0x7ffff;
+            if (dev->flags & FLAG_BXB) {                 /* 28F004BX-B/28F400BX-B */
+                dev->block_start[BLOCK_MAIN1] = 0x20000; /* MAIN BLOCK 1 */
+                dev->block_end[BLOCK_MAIN1]   = 0x3ffff;
+                dev->block_start[BLOCK_MAIN2] = 0x40000; /* MAIN BLOCK 2 */
+                dev->block_end[BLOCK_MAIN2]   = 0x5ffff;
+                dev->block_start[BLOCK_MAIN3] = 0x60000; /* MAIN BLOCK 3 */
+                dev->block_end[BLOCK_MAIN3]   = 0x7ffff;
+                dev->block_start[BLOCK_MAIN4] = 0x08000; /* MAIN BLOCK 4 */
+                dev->block_end[BLOCK_MAIN4]   = 0x1ffff;
+                dev->block_start[BLOCK_DATA1] = 0x06000; /* DATA AREA 1 BLOCK */
+                dev->block_end[BLOCK_DATA1]   = 0x07fff;
+                dev->block_start[BLOCK_DATA2] = 0x04000; /* DATA AREA 2 BLOCK */
+                dev->block_end[BLOCK_DATA2]   = 0x05fff;
+                dev->block_start[BLOCK_BOOT]  = 0x00000; /* BOOT BLOCK */
+                dev->block_end[BLOCK_BOOT]    = 0x03fff;
             } else {
                 dev->block_start[BLOCK_MAIN1] = 0x00000; /* MAIN BLOCK 1 */
                 dev->block_end[BLOCK_MAIN1]   = 0x1ffff;
