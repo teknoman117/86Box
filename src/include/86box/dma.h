@@ -116,6 +116,8 @@ extern int dma_channel_write(int channel, uint16_t val);
 extern int dma_channel_read32(int channel, uint32_t *val);
 extern int dma_channel_write32(int channel, uint32_t val);
 
+extern void dma_remove_8237(void);
+
 extern void dma_alias_set(void);
 extern void dma_alias_set_piix(void);
 extern void dma_alias_remove(void);

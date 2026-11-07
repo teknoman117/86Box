@@ -2458,6 +2458,21 @@ dma16_init(void)
                   dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
 }
 
+/* Takes the 8237s' registers and page registers out of the I/O space, for
+   a machine whose DMA controller is part of its chipset and replaces them. */
+void
+dma_remove_8237(void)
+{
+    io_removehandler(0x0000, 16,
+                     dma_read, NULL, NULL, dma_write, NULL, NULL, NULL);
+    io_removehandler(0x0080, 8,
+                     dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
+    io_removehandler(0x00C0, 32,
+                     dma16_read, NULL, NULL, dma16_write, NULL, NULL, NULL);
+    io_removehandler(0x0088, 8,
+                     dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
+}
+
 void
 dma_alias_set(void)
 {
