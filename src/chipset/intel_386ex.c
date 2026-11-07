@@ -16,12 +16,12 @@
  *          space is enabled by a write sequence to ports 22h and 23h,
  *          which sets REMAPCFG's ESE bit.
  *
- *          The interrupt controllers, timer and DMA controller are the
- *          machine's usual AT ones, which the chip only maps. The DMA
- *          controller, Port 92 and the other on-chip units (SSIO, power
- *          management, pin configuration) do not appear in the expanded
- *          I/O space, except for PWRCON, which is stored. The chip-select,
- *          refresh control and watchdog timer units have their own files.
+ *          The interrupt controllers and timer are the machine's usual AT
+ *          ones, which the chip only maps. Port 92 and the other on-chip
+ *          units (SSIO, power management, pin configuration) do not appear
+ *          in the expanded I/O space, except for PWRCON, which is stored.
+ *          The chip-select, refresh control, watchdog timer and DMA units
+ *          have their own files; the DMA unit replaces the AT's 8237As.
  *
  *          The three I/O ports are the machine's GPIO pins, P1 in bits
  *          7:0, P2 in bits 15:8 and P3 in bits 23:16: the chip hands what
@@ -144,6 +144,7 @@ struct i386ex_t {
     uint8_t weak; /* Ports whose weak resistors are still on, by bit. */
 
     i386ex_csu_t *csu;
+    i386ex_dma_t *dma;
     i386ex_rcu_t *rcu;
     i386ex_wdt_t *wdt;
     serial_t     *uart[2];
@@ -356,6 +357,8 @@ i386ex_map_peripherals(i386ex_t *dev, int set, int expanded, uint16_t mask)
         io_handler(set, expanded ? ICW1M : ICW1M_PC, 2, pic_read, NULL, NULL, pic_write, NULL, NULL, &pic);
     if (mask & REMAP_ISR)
         io_handler(set, expanded ? ICW1S : ICW1S_PC, 2, pic_read, NULL, NULL, pic_write, NULL, NULL, &pic2);
+    if (mask & REMAP_DR)
+        i386ex_dma_handler(dev->dma, set, expanded);
     if ((mask & REMAP_TR) && (pit_devs[0].data != NULL))
         io_handler(set, expanded ? TMR0 : TMR0_PC, 4,
                    pit_devs[0].read, NULL, NULL, pit_devs[0].write, NULL, NULL, pit_devs[0].data);
@@ -383,7 +386,7 @@ i386ex_expanded(i386ex_t *dev, int set)
 {
     i386ex_log("386EX: expanded I/O space %s\n", set ? "enabled" : "disabled");
 
-    i386ex_map_peripherals(dev, set, 1, REMAP_IMR | REMAP_ISR | REMAP_TR | REMAP_S0R | REMAP_S1R);
+    i386ex_map_peripherals(dev, set, 1, REMAP_IMR | REMAP_ISR | REMAP_DR | REMAP_TR | REMAP_S0R | REMAP_S1R);
 
     io_handler(set, PWRCON, 1, i386ex_config_read, NULL, NULL, i386ex_config_write, NULL, NULL, dev);
     io_handler(set, CLKPRS, 2, i386ex_config_read, NULL, NULL, i386ex_config_write, NULL, NULL, dev);
@@ -413,11 +416,8 @@ i386ex_remapcfg_set(i386ex_t *dev, uint16_t val)
 
     i386ex_log("386EX: REMAPCFG = %04X\n", dev->remapcfg);
 
-    if (changed & REMAP_DR)
-        i386ex_log("386EX: DMA remapping is not emulated\n");
-
     /* A peripheral is in the DOS I/O space while its remap bit is clear. */
-    if (changed & REMAP_MASK & ~REMAP_DR) {
+    if (changed & REMAP_MASK) {
         i386ex_map_peripherals(dev, 0, 0, changed & dev->remapcfg);
         i386ex_map_peripherals(dev, 1, 0, changed & old);
     }
@@ -528,10 +528,12 @@ i386ex_config_write(uint16_t port, uint8_t val, void *priv)
             break;
         case DMACFG:
             dev->dmacfg = val;
+            i386ex_dma_set_cfg(dev->dma, val);
             break;
         case INTCFG:
             dev->intcfg = val;
             i386ex_uart_connect(dev);
+            i386ex_dma_set_intcfg(dev->dma, val);
             break;
         case TMRCFG:
             dev->tmrcfg = val;
@@ -550,6 +552,12 @@ i386ex_csu_t *
 i386ex_get_csu(i386ex_t *dev)
 {
     return dev->csu;
+}
+
+void
+i386ex_set_dma_channels(i386ex_t *dev, int drq0, int drq1)
+{
+    i386ex_dma_set_channels(dev->dma, drq0, drq1);
 }
 
 void
@@ -623,6 +631,7 @@ i386ex_init(const device_t *info)
     i386ex_t *dev = (i386ex_t *) calloc(1, sizeof(i386ex_t));
 
     dev->csu = device_add(&i386ex_csu_device);
+    dev->dma = device_add(&i386ex_dma_device);
     dev->rcu = device_add(&i386ex_rcu_device);
     dev->wdt = device_add(&i386ex_wdt_device);
 
@@ -632,7 +641,7 @@ i386ex_init(const device_t *info)
     if (info->local & I386EX_SIO1)
         dev->uart[1] = device_add_inst(&ns16450_device, 2);
 
-    i386ex_map_peripherals(dev, 1, 0, REMAP_S0R | REMAP_S1R);
+    i386ex_map_peripherals(dev, 1, 0, REMAP_DR | REMAP_S0R | REMAP_S1R);
     i386ex_uart_connect(dev);
     i386ex_uart_clock(dev);
     i386ex_timer_clock(dev);
