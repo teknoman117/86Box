@@ -129,6 +129,28 @@ serial_do_irq(serial_t *dev, int set)
     }
 }
 
+/* Tells lsr_func of a change of the LSR. */
+static void
+serial_lsr_changed(serial_t *dev)
+{
+    if ((dev->lsr_func != NULL) && (dev->lsr != dev->lsr_told)) {
+        dev->lsr_told = dev->lsr;
+        dev->lsr_func(dev, dev->lsr, dev->lsr_priv);
+    }
+}
+
+void
+serial_set_lsr_func(serial_t *dev, void (*func)(serial_t *dev, uint8_t lsr, void *priv), void *priv)
+{
+    dev->lsr_func = func;
+    dev->lsr_priv = priv;
+
+    if (func != NULL) {
+        dev->lsr_told = dev->lsr;
+        func(dev, dev->lsr, priv);
+    }
+}
+
 void
 serial_update_ints(serial_t *dev)
 {
@@ -147,6 +169,9 @@ serial_update_ints(serial_t *dev)
     }
 
     serial_do_irq(dev, !(dev->iir & 0x01) && ((dev->mctrl & 8) || dev->irq_direct));
+
+    /* Every change of the LSR but the FIFOs' comes through here. */
+    serial_lsr_changed(dev);
 }
 
 /*
@@ -956,6 +981,7 @@ serial_rcvr_d_empty_evt(void *priv)
     serial_t *dev = (serial_t *) priv;
 
     dev->lsr = (dev->lsr & 0xfe) | (fifo_get_empty(dev->rcvr_fifo) ? 0 : 1);
+    serial_lsr_changed(dev);
 }
 
 static void
@@ -964,6 +990,7 @@ serial_rcvr_d_overrun_evt(void *priv)
     serial_t *dev = (serial_t *) priv;
 
     dev->lsr = (dev->lsr & 0xfd) | (fifo_get_overrun(dev->rcvr_fifo) << 1);
+    serial_lsr_changed(dev);
 }
 
 static void
@@ -984,6 +1011,7 @@ serial_xmit_d_empty_evt(void *priv)
 
     dev->lsr = (dev->lsr & 0x9f) | (is_empty << 5) | ((dev->txsr_empty && is_empty) << 6);
     dev->int_status = (dev->int_status & ~SERIAL_INT_TRANSMIT) | (is_empty ? SERIAL_INT_TRANSMIT : 0);
+    serial_lsr_changed(dev);
 }
 
 static void
