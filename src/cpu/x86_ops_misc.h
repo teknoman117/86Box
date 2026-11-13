@@ -1,4 +1,5 @@
 #include "x86_interrupt.h"
+#include "x86_mul_timing.h"
 
 static int
 opCBW(UNUSED(uint32_t fetchdat))
@@ -110,8 +111,11 @@ opF6_a16(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(13);
-            PREFETCH_RUN(13, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            {
+                const int cyc = mul_cycles(dst, 13);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            }
             break;
         case 0x28: /*IMUL AL,b*/
             tempws = (int) ((int8_t) AL) * (int) ((int8_t) dst);
@@ -121,8 +125,11 @@ opF6_a16(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(14);
-            PREFETCH_RUN(14, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            {
+                const int cyc = mul_cycles(mul_magnitude((int8_t) dst), 14);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            }
             break;
         case 0x30: /*DIV AL,b*/
             src16 = AX;
@@ -228,8 +235,11 @@ opF6_a32(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(13);
-            PREFETCH_RUN(13, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            {
+                const int cyc = mul_cycles(dst, 13);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            }
             break;
         case 0x28: /*IMUL AL,b*/
             tempws = (int) ((int8_t) AL) * (int) ((int8_t) dst);
@@ -239,8 +249,11 @@ opF6_a32(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(14);
-            PREFETCH_RUN(14, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            {
+                const int cyc = mul_cycles(mul_magnitude((int8_t) dst), 14);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            }
             break;
         case 0x30: /*DIV AL,b*/
             src16 = AX;
@@ -347,8 +360,11 @@ opF7_w_a16(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(21);
-            PREFETCH_RUN(21, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            {
+                const int cyc = mul_cycles(dst, 21);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            }
             break;
         case 0x28: /*IMUL AX,w*/
             templ = (int) ((int16_t) AX) * (int) ((int16_t) dst);
@@ -359,8 +375,11 @@ opF7_w_a16(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(22);
-            PREFETCH_RUN(22, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            {
+                const int cyc = mul_cycles(mul_magnitude((int16_t) dst), 22);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 0);
+            }
             break;
         case 0x30: /*DIV AX,w*/
             templ = (DX << 16) | AX;
@@ -461,8 +480,11 @@ opF7_w_a32(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(21);
-            PREFETCH_RUN(21, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            {
+                const int cyc = mul_cycles(dst, 21);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            }
             break;
         case 0x28: /*IMUL AX,w*/
             templ = (int) ((int16_t) AX) * (int) ((int16_t) dst);
@@ -473,8 +495,11 @@ opF7_w_a32(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(22);
-            PREFETCH_RUN(22, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            {
+                const int cyc = mul_cycles(mul_magnitude((int16_t) dst), 22);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, (cpu_mod == 3) ? 0 : 1, 0, 0, 0, 1);
+            }
             break;
         case 0x30: /*DIV AX,w*/
             templ = (DX << 16) | AX;
@@ -575,8 +600,11 @@ opF7_l_a16(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(21);
-            PREFETCH_RUN(21, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 0);
+            {
+                const int cyc = mul_cycles(dst, 21);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 0);
+            }
             break;
         case 0x28: /*IMUL EAX,l*/
             temp64 = (int64_t) (int32_t) EAX * (int64_t) (int32_t) dst;
@@ -587,8 +615,11 @@ opF7_l_a16(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(38);
-            PREFETCH_RUN(38, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 0);
+            {
+                const int cyc = mul_cycles(mul_magnitude((int32_t) dst), 38);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 0);
+            }
             break;
         case 0x30: /*DIV EAX,l*/
             if (divl(dst))
@@ -669,8 +700,11 @@ opF7_l_a32(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(21);
-            PREFETCH_RUN(21, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 1);
+            {
+                const int cyc = mul_cycles(dst, 21);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 1);
+            }
             break;
         case 0x28: /*IMUL EAX,l*/
             temp64 = (int64_t) (int32_t) EAX * (int64_t) (int32_t) dst;
@@ -681,8 +715,11 @@ opF7_l_a32(uint32_t fetchdat)
                 cpu_state.flags |= (C_FLAG | V_FLAG);
             else
                 cpu_state.flags &= ~(C_FLAG | V_FLAG);
-            CLOCK_CYCLES(38);
-            PREFETCH_RUN(38, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 1);
+            {
+                const int cyc = mul_cycles(mul_magnitude((int32_t) dst), 38);
+                CLOCK_CYCLES(cyc);
+                PREFETCH_RUN(cyc, 2, rmdat, 0, (cpu_mod == 3) ? 0 : 1, 0, 0, 1);
+            }
             break;
         case 0x30: /*DIV EAX,l*/
             if (divl(dst))
