@@ -498,7 +498,21 @@ extern void            machine_init_gpio_acpi(void);
 extern uint32_t        machine_handle_gpio_acpi(uint8_t write, uint32_t val);
 
 /* Initialization functions for boards and systems. */
+
+/*
+ * machine_common_init_ex() and machine_at_common_init_ex() flags: the
+ * board isn't a standard AT in these ways.
+ *
+ * MACHINE_NONSTANDARD_DMA  The board doesn't have the AT's 8237A DMA
+ *                          controllers and page registers: its chipset has
+ *                          its own DMA unit, which registers itself with
+ *                          dma_set_controller(). The DMA core is still set
+ *                          up, for dma.h's channel functions.
+ */
+#define MACHINE_NONSTANDARD_DMA 0x00000001
+
 extern void            machine_common_init(const machine_t *);
+extern void            machine_common_init_ex(const machine_t *, uint32_t flags);
 extern int             machine_ibm5140_init(const machine_t *);
 #ifdef EMU_DEVICE_H
 extern const device_t  ibm5140_device;
@@ -746,6 +760,7 @@ extern int             machine_at_fic4386vcv_init(const machine_t *);
 
 /* m_at_common.c */
 extern void            machine_at_common_init(const machine_t *);
+extern void            machine_at_common_init_ex(const machine_t *, uint32_t flags);
 extern void            machine_at_init(const machine_t *);
 extern void            machine_at_ps2_init(const machine_t *);
 extern void            machine_at_common_ide_init(const machine_t *);
