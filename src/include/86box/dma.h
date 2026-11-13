@@ -86,7 +86,9 @@ typedef struct dma_ctrl_t {
     int  (*mode)(int channel, void *priv);
 } dma_ctrl_t;
 
+extern void dma_core_init(void);
 extern void dma_init(void);
+extern int  dma_has_8237(void);
 extern void dma_init_ibm5140(void);
 extern void dma16_init(void);
 extern void ps2_dma_init(void);

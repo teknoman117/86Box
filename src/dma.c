@@ -52,6 +52,7 @@ static uint8_t  dma_req_is_soft;
 static uint8_t  dma_advanced;
 static uint8_t  dma_at;
 static uint8_t  dma_ibm5140;
+static uint8_t  dma_8237_mapped; /* dma_init() put the first 8237A in the I/O space. */
 static uint8_t  dma_ibm5140_diag;
 static uint8_t  dma_buffer[65536];
 static uint16_t dma_sg_base;
@@ -2414,8 +2415,15 @@ dma_reset(void)
         dma_m = (dma_m & 0xf0) | 0x0f;
 }
 
+/*
+   The DMA core without any controller in the I/O space: the channel owners,
+   the controller's kind and the channels' state, which dma.h's channel
+   functions work through. A machine whose chipset has its own DMA unit in
+   place of the AT's 8237As inits this alone, and the chipset registers
+   itself with dma_set_controller().
+ */
 void
-dma_init(void)
+dma_core_init(void)
 {
     /* Only a new machine drops the channel owners; a reset must keep them,
        because the controller registered them for the life of the device. */
@@ -2427,12 +2435,28 @@ dma_init(void)
        EISA chipset sets it again after this. */
     dma_eisa          = 0;
     dma_sg_count_mask = 0x0000fffe;
+    dma_8237_mapped   = 0;
     dma_reset();
+}
+
+/* The DMA core and the first 8237A, with its registers and page registers in the I/O space. */
+void
+dma_init(void)
+{
+    dma_core_init();
 
     io_sethandler(0x0000, 16,
                   dma_read, NULL, NULL, dma_write, NULL, NULL, NULL);
     io_sethandler(0x0080, 8,
                   dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
+    dma_8237_mapped = 1;
+}
+
+/* Whether the machine has the first 8237A in the I/O space, which a chipset with its own DMA unit can check it doesn't. */
+int
+dma_has_8237(void)
+{
+    return dma_8237_mapped;
 }
 
 void
