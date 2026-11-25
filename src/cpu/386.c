@@ -311,6 +311,7 @@ exec386_2386(int32_t cycs)
                 cpu_state.pc++;
                 if (opcode == 0xf0)
                     in_lock = 1;
+                CPU_COUNT_INSN(opcode, fetchdat);
                 x86_2386_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                 in_lock = 0;
                 if (x86_was_reset)

@@ -658,6 +658,7 @@ exec386_dynarec_int_common(const int dbg)
             cpu_state.pc++;
             if (dbg)
                 cpu_state.eflags &= ~(RF_FLAG);
+            CPU_COUNT_INSN(opcode, fetchdat);
             x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
         }
 
@@ -1050,6 +1051,7 @@ exec386_dynarec_dyn(const int dbg)
 
                 if (dbg)
                     cpu_state.eflags &= ~(RF_FLAG);
+                CPU_COUNT_INSN(opcode, fetchdat);
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
 
                 if (x86_was_reset)
@@ -1187,6 +1189,7 @@ exec386_dynarec_dyn(const int dbg)
 
                 if (dbg)
                     cpu_state.eflags &= ~(RF_FLAG);
+                CPU_COUNT_INSN(opcode, fetchdat);
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
 
                 if (x86_was_reset)
@@ -1845,6 +1848,7 @@ exec386_common(int32_t cycs, const int dbg)
                 cpu_state.pc++;
                 if (dbg)
                     cpu_state.eflags &= ~(RF_FLAG);
+                CPU_COUNT_INSN(opcode, fetchdat);
                 x86_opcodes[(opcode | cpu_state.op32) & 0x3ff](fetchdat);
                 if (x86_was_reset)
                     break;

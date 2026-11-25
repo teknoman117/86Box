@@ -2185,6 +2185,30 @@ handle_request(char *line)
     } else if (!strcmp(argv[0], "hold")) {
         hold();
         respond_ok_time();
+    } else if (!strcmp(argv[0], "insns") && (argc <= 2)) {
+        /* insns [reset]: the instructions the interpreter has executed, in all and by opcode
+           (cpu_insn_hist: "0f af" for 0Fh-prefixed ones), and with reset, starts them afresh.
+           Run with cpu_use_dynarec = 0: the recompiler's blocks aren't counted. */
+        uint64_t total = 0;
+        int      first = 1;
+
+        for (int i = 0; i < 512; i++)
+            total += cpu_insn_hist[i];
+        resp.len = 0;
+        sb_printf(&resp, "{\"ok\":true,\"ms\":%llu,\"total\":%llu,\"counts\":{", (unsigned long long) emu_ms,
+                  (unsigned long long) total);
+        for (int i = 0; i < 512; i++) {
+            if (!cpu_insn_hist[i])
+                continue;
+            if (i < 0x100)
+                sb_printf(&resp, "%s\"%02x\":%llu", first ? "" : ",", i, (unsigned long long) cpu_insn_hist[i]);
+            else
+                sb_printf(&resp, "%s\"0f %02x\":%llu", first ? "" : ",", i & 0xff, (unsigned long long) cpu_insn_hist[i]);
+            first = 0;
+        }
+        sb_printf(&resp, "}}");
+        if ((argc == 2) && !strcmp(argv[1], "reset"))
+            memset(cpu_insn_hist, 0, sizeof(cpu_insn_hist));
     } else if (!strcmp(argv[0], "release")) {
         release();
         respond_ok_time();

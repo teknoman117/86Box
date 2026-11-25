@@ -478,6 +478,12 @@ extern int call_gate_fault_restores;
 extern int far_load_order;
 extern int task_busy_undo;
 extern int is486;
+
+/* The instructions the interpreters have executed, by opcode, for automation's `insns`: one-byte
+   opcodes at 0-FFh (a prefix counts as an instruction of its own), 0Fh-prefixed ones at 100h plus
+   their second byte. Code the dynamic recompiler runs as blocks isn't counted. */
+extern uint64_t cpu_insn_hist[512];
+#define CPU_COUNT_INSN(op, next) cpu_insn_hist[((op) == 0x0f) ? (0x100 | ((next) & 0xff)) : (op)]++
 extern int is586;
 extern int is_am486;
 extern int is_am486dxl;

@@ -259,6 +259,7 @@ int call_gate_fault_restores;
 int far_load_order;
 int task_busy_undo;
 int is486 = 1;
+uint64_t cpu_insn_hist[512];
 int is586 = 0;
 int cpu_isintel;
 int cpu_iscyrix;
